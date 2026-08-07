@@ -3,7 +3,6 @@ const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
-const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 
@@ -17,21 +16,33 @@ const wss = new WebSocketServer({ server });
 const JWT_SECRET = 'noxvoid_super_secret_key_123';
 const PORT = 3000;
 
-// Setup SQLite
-const db = new sqlite3.Database('./database.db', (err) => {
-    if (err) console.error(err.message);
-    else console.log('Connected to SQLite database.');
-});
+const messagesFile = './messages.json';
 
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nama TEXT,
-        role TEXT,
-        content TEXT,
-        timestamp INTEGER
-    )`);
-});
+function getMessages() {
+    try {
+        if (!fs.existsSync(messagesFile)) {
+            fs.writeFileSync(messagesFile, '[]');
+        }
+        const data = fs.readFileSync(messagesFile);
+        return JSON.parse(data);
+    } catch (e) {
+        console.error("Error reading messages.json", e);
+        return [];
+    }
+}
+
+function saveMessage(msg) {
+    try {
+        const messages = getMessages();
+        msg.id = messages.length > 0 ? messages[messages.length - 1].id + 1 : 1;
+        messages.push(msg);
+        fs.writeFileSync(messagesFile, JSON.stringify(messages, null, 2));
+        return msg;
+    } catch (e) {
+        console.error("Error saving message", e);
+        return null;
+    }
+}
 
 // Load Users
 function getUsers() {
@@ -103,25 +114,20 @@ wss.on('connection', (ws, req) => {
                     broadcastOnlineCount();
 
                     // Send history
-                    db.all("SELECT * FROM messages ORDER BY timestamp ASC", (err, rows) => {
-                        if (!err) {
-                            ws.send(JSON.stringify({ type: 'history', messages: rows }));
-                        }
-                    });
+                    const rows = getMessages();
+                    ws.send(JSON.stringify({ type: 'history', messages: rows }));
                 });
             } else if (data.type === 'send_message' && isAuthenticated) {
-                const msg = {
+                let msg = {
                     nama: ws.user.nama,
                     role: ws.user.role,
                     content: data.content,
                     timestamp: Date.now()
                 };
-                db.run("INSERT INTO messages (nama, role, content, timestamp) VALUES (?, ?, ?, ?)", [msg.nama, msg.role, msg.content, msg.timestamp], function(err) {
-                    if (!err) {
-                        msg.id = this.lastID;
-                        broadcast({ type: 'receive_message', message: msg });
-                    }
-                });
+                msg = saveMessage(msg);
+                if (msg) {
+                    broadcast({ type: 'receive_message', message: msg });
+                }
             }
         } catch (e) {
             console.error("Invalid WS message", e);
