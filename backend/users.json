@@ -1,0 +1,20 @@
+[
+  {
+    "nama": "Vanxz",
+    "tag": "#39AS72S",
+    "password": "owner123",
+    "role": "owner"
+  },
+  {
+    "nama": "Raka",
+    "tag": "#QW81LP",
+    "password": "admin123",
+    "role": "admin"
+  },
+  {
+    "nama": "Nox",
+    "tag": "#AB92XX",
+    "password": "member123",
+    "role": "member"
+  }
+]

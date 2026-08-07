@@ -1,0 +1,20 @@
+[
+  {
+    "nama": "Vanxz",
+    "tag": "#39AS72S",
+    "password": "$2b$10$aw2QDKmbQczBPc/049PlceJ4.nSstEax7E00XzX.dPvMhhZHdcyEK",
+    "role": "owner"
+  },
+  {
+    "nama": "Raka",
+    "tag": "#QW81LP",
+    "password": "$2b$10$HiWFMyka1X4tQH6n7zOJ7.5P6bFyW9inEi/X4LQG18hlRhH3xlpnK",
+    "role": "admin"
+  },
+  {
+    "nama": "Nox",
+    "tag": "#AB92XX",
+    "password": "$2b$10$41N6G2BECCjM1IBami7G8uqBoVaG86BGMlr9Niz7cd08/0ryTbGMC",
+    "role": "member"
+  }
+]
