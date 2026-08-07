@@ -1,10 +1,14 @@
 package com.example
+
 import kotlinx.coroutines.launch
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,7 +24,6 @@ import com.example.ui.screens.ChatScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.ProfileScreen
-import com.example.ui.theme.BackgroundDark
 import com.example.ui.theme.NoxVoidTheme
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -33,7 +36,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         authRepository = AuthRepository(applicationContext)
 
+        // Enable immersive fullscreen using WindowInsetsControllerCompat
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+
         setContent {
+            // Re-apply hide in composition side-effect so it remains active while composables are displayed
+            DisposableEffect(Unit) {
+                controller.hide(WindowInsetsCompat.Type.systemBars())
+                onDispose { }
+            }
+
             NoxVoidTheme {
                 val navController = rememberNavController()
                 var startDestination by remember { mutableStateOf<String?>(null) }
@@ -114,6 +129,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-hide bars when activity resumes
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
     }
 
     override fun onDestroy() {
