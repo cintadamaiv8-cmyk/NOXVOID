@@ -30,6 +30,8 @@ import com.example.network.RetrofitClient
 import com.example.network.SocketClient
 import com.example.data.MonitoringManager
 import com.example.ui.theme.*
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +44,8 @@ fun HomeScreen(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
 
     val onlineUsers by socketClient.onlineUsersCount.collectAsState()
     val isSocketConnected by socketClient.isConnected.collectAsState()
@@ -111,7 +115,7 @@ fun HomeScreen(
                             text = { Text("Logout", color = OfflineRed) },
                             onClick = {
                                 showMenu = false
-                                kotlinx.coroutines.MainScope().launch {
+                                coroutineScope.launch {
                                     authRepository.clearAuthData()
                                     socketClient.disconnect()
                                     onLogout()
