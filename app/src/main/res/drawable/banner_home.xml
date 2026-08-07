@@ -4,7 +4,20 @@
     android:height="180dp"
     android:viewportWidth="360"
     android:viewportHeight="180">
-    <rect android:width="360" android:height="180" android:fillColor="#0B0B0B" />
-    <path android:fillColor="#1A1A1A" android:pathData="M0,140 L360,140 L360,180 L0,180 Z" />
-    <path android:fillColor="#6A00F4" android:pathData="M20,20 L340,20 L340,120 L20,120 Z" />
+
+    <!-- Background rectangle (use path instead of rect which isn't supported in VectorDrawable) -->
+    <path
+        android:fillColor="#0B0B0B"
+        android:pathData="M0,0h360v180h-360z" />
+
+    <!-- Bottom stripe -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M0,140h360v40h-360z" />
+
+    <!-- Primary banner area -->
+    <path
+        android:fillColor="#6A00F4"
+        android:pathData="M20,20h320v100h-320z" />
+
 </vector>

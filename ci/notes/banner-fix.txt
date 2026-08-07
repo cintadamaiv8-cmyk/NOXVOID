@@ -1,0 +1,1 @@
+Trigger fix: replace invalid <rect> usage in banner_home.xml with path-based rectangles to satisfy VectorDrawable resource linking.
