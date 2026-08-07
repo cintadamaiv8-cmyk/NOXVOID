@@ -55,7 +55,7 @@ fun LoginScreen(
                     .clip(RoundedCornerShape(24.dp)),
                 contentScale = ContentScale.Crop
             )
-            
+
             Spacer(modifier = Modifier.height(48.dp))
 
             Card(
@@ -77,7 +77,7 @@ fun LoginScreen(
                         letterSpacing = 2.sp
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     OutlinedTextField(
                         value = nama,
                         onValueChange = { nama = it },
@@ -93,9 +93,9 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
                     )
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
@@ -112,7 +112,7 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
                     )
-                    
+
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
@@ -135,7 +135,8 @@ fun LoginScreen(
                                         errorMessage = response.message ?: "Login gagal"
                                     }
                                 } catch (e: Exception) {
-                                    errorMessage = "Nama, tag, atau password salah."
+                                    // tampilkan pesan dari backend jika diteruskan, atau exception message
+                                    errorMessage = e.message ?: "Login gagal"
                                 } finally {
                                     isLoading = false
                                 }
@@ -155,9 +156,9 @@ fun LoginScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             if (errorMessage != null) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = OfflineRed.copy(alpha = 0.2f)),
