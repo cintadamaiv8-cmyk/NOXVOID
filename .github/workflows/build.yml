@@ -6,16 +6,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # run JVM in headless mode to avoid AWT errors from KSP on CI
+      JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java (Temurin 17)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+
+      - name: Set up Android SDK and build tools
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          build-tools: '30.0.3'
 
       - name: Generate debug keystore
         run: |
@@ -29,8 +40,11 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Build APK
-        run: chmod +x gradlew && ./gradlew assembleDebug
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build APK (assembleDebug)
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
