@@ -28,9 +28,8 @@ import com.example.R
 import com.example.data.AuthRepository
 import com.example.network.RetrofitClient
 import com.example.network.SocketClient
-import com.example.data.MonitoringManager
 import com.example.ui.theme.*
-import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,25 +41,48 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    var showAbout by remember { mutableStateOf(false) }
-
     val coroutineScope = rememberCoroutineScope()
-
+    var isMonitoring by remember { mutableStateOf(false) }
+    var pingStatus by remember { mutableStateOf("Offline") }
+    var pingMs by remember { mutableStateOf("0 ms") }
+    
     val onlineUsers by socketClient.onlineUsersCount.collectAsState()
     val isSocketConnected by socketClient.isConnected.collectAsState()
 
-    // Monitoring state moved to MonitoringManager to persist across screens
-    val isMonitoring by MonitoringManager.isMonitoring.collectAsState()
-    val pingStatus by MonitoringManager.pingStatus.collectAsState()
-    val pingMs by MonitoringManager.pingMs.collectAsState()
+    var showMenu by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isMonitoring) {
+        while (isMonitoring) {
+            val start = System.currentTimeMillis()
+            try {
+                pingStatus = "Connecting..."
+                val response = RetrofitClient.instance.ping()
+                val elapsed = System.currentTimeMillis() - start
+                if (response.status == "online") {
+                    pingStatus = "Online"
+                    pingMs = "${elapsed} ms"
+                } else {
+                    pingStatus = "Offline"
+                }
+            } catch (e: Exception) {
+                pingStatus = "Offline"
+                pingMs = "- ms"
+            }
+            delay(3000)
+        }
+        if (!isMonitoring) {
+            pingStatus = "Offline"
+            pingMs = "0 ms"
+        }
+    }
 
     Scaffold(
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(72.dp)
+                    .height(64.dp)
                     .background(BackgroundDark)
                     .border(1.dp, BorderDark)
                     .padding(horizontal = 20.dp),
@@ -68,20 +90,19 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo_login),
-                        contentDescription = "App Logo",
+                    Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(32.dp)
                             .clip(RoundedCornerShape(8.dp))
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column {
-                        Text("NOXVOID", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                        Text("Private Community", color = TextGray, fontSize = 12.sp)
+                            .background(Brush.linearGradient(listOf(AccentPurple, AccentCyan))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("NV", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("NOXVOID", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 }
-
+                
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -106,7 +127,7 @@ fun HomeScreen(
                         )
                         DropdownMenuItem(
                             text = { Text("Tentang", color = TextWhite) },
-                            onClick = {
+                            onClick = { 
                                 showMenu = false
                                 showAbout = true
                             }
@@ -132,19 +153,12 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(18.dp)
+                .padding(16.dp)
         ) {
             // Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(1.dp, BorderDark, RoundedCornerShape(20.dp))
-                    .padding(6.dp)
-            ) {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(24.dp)).border(1.dp, BorderDark, RoundedCornerShape(24.dp))) {
                 Image(
-                    painter = painterResource(id = R.drawable.banner_home),
+                    painter = painterResource(id = R.drawable.banner),
                     contentDescription = "Banner",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -153,42 +167,42 @@ fun HomeScreen(
                     Text("PRIVATE COMMUNITY", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
                 }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
             // Community Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = CardDark),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToChat() }
-                    .border(1.dp, BorderDark, RoundedCornerShape(20.dp))
+                    .border(1.dp, BorderDark, RoundedCornerShape(24.dp))
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Top
                     ) {
                         Column {
-                            Text("Clash Of Clans Community", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Internal private discussion", color = TextGray, fontSize = 13.sp, fontStyle = FontStyle.Italic)
+                            Text("Clash Of Clans Community", color = TextWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Internal private discussion", color = TextGray, fontSize = 14.sp, fontStyle = FontStyle.Italic)
                         }
                         Box(
                             modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(BorderDark),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(Icons.Default.Group, contentDescription = null, tint = AccentCyan)
                         }
                     }
-
+                    
                     Spacer(modifier = Modifier.height(16.dp))
-
+                    
                     Button(
                         onClick = { onNavigateToChat() },
                         modifier = Modifier
@@ -214,24 +228,24 @@ fun HomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(22.dp))
-
+            Spacer(modifier = Modifier.height(24.dp))
+            
             // Server Status Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = CardDark),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, BorderDark, RoundedCornerShape(20.dp))
+                    .border(1.dp, BorderDark, RoundedCornerShape(24.dp))
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("SERVER STATISTICS", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-
+                        
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
@@ -244,7 +258,7 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Switch(
                                 checked = isMonitoring,
-                                onCheckedChange = { MonitoringManager.setMonitoring(it) },
+                                onCheckedChange = { isMonitoring = it },
                                 modifier = Modifier.height(24.dp),
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = TextWhite,
@@ -255,9 +269,9 @@ fun HomeScreen(
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
+                    
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -272,7 +286,7 @@ fun HomeScreen(
                         ) {
                             Column {
                                 Text("STATUS", color = TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     val statusColor = when (pingStatus) {
                                         "Online" -> OnlineGreen
@@ -285,7 +299,7 @@ fun HomeScreen(
                                 }
                             }
                         }
-
+                        
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -296,7 +310,7 @@ fun HomeScreen(
                         ) {
                             Column {
                                 Text("LATENCY", color = TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.Bottom) {
                                     val pingValue = pingMs.replace(" ms", "")
                                     Text(pingValue, color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)

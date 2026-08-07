@@ -8,8 +8,6 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 
-private const val TAG = "SocketClient"
-
 data class ChatMessage(
     val id: Int = 0,
     val nama: String,
@@ -24,7 +22,7 @@ class SocketClient(private val token: String) {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
-
+    
     private val _onlineUsersCount = MutableStateFlow(0)
     val onlineUsersCount: StateFlow<Int> = _onlineUsersCount
 
@@ -36,11 +34,10 @@ class SocketClient(private val token: String) {
             .url(AppConfig.WS_URL)
             .build()
 
-        Log.d(TAG, "Connecting to WS_URL: ${AppConfig.WS_URL}")
-
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 _isConnected.value = true
+                // Send auth token
                 val authMsg = JSONObject().apply {
                     put("type", "auth")
                     put("token", token)
@@ -52,7 +49,9 @@ class SocketClient(private val token: String) {
                 try {
                     val json = JSONObject(text)
                     when (json.getString("type")) {
-                        "online_users" -> _onlineUsersCount.value = json.getInt("count")
+                        "online_users" -> {
+                            _onlineUsersCount.value = json.getInt("count")
+                        }
                         "history" -> {
                             val msgArray = json.getJSONArray("messages")
                             val history = mutableListOf<ChatMessage>()
@@ -67,11 +66,11 @@ class SocketClient(private val token: String) {
                             _messages.value = _messages.value + msg
                         }
                         "error" -> {
-                            Log.e(TAG, "Error: ${json.getString("message")}")
+                            Log.e("SocketClient", "Error: ${json.getString("message")}")
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Message parse error", e)
+                    Log.e("SocketClient", "Message parse error", e)
                 }
             }
 
@@ -81,7 +80,7 @@ class SocketClient(private val token: String) {
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 _isConnected.value = false
-                Log.e(TAG, "Failure", t)
+                Log.e("SocketClient", "Failure", t)
             }
         })
     }
@@ -89,10 +88,10 @@ class SocketClient(private val token: String) {
     private fun parseMessage(obj: JSONObject): ChatMessage {
         return ChatMessage(
             id = obj.optInt("id", 0),
-            nama = obj.getString("nama"),
-            role = obj.getString("role"),
-            content = obj.getString("content"),
-            timestamp = obj.getLong("timestamp")
+            nama = obj.optString("nama", "Unknown"),
+            role = obj.optString("role", "member"),
+            content = obj.optString("content", ""),
+            timestamp = obj.optLong("timestamp", System.currentTimeMillis())
         )
     }
 
