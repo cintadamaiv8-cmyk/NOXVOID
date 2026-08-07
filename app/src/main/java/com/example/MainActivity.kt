@@ -1,4 +1,5 @@
 package com.example
+import kotlinx.coroutines.launch
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,7 +22,7 @@ import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.theme.BackgroundDark
 import com.example.ui.theme.NoxVoidTheme
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 
 class MainActivity : ComponentActivity() {
     private lateinit var authRepository: AuthRepository
@@ -40,8 +41,8 @@ class MainActivity : ComponentActivity() {
                 var currentUserNama by remember { mutableStateOf<String>("") }
 
                 LaunchedEffect(Unit) {
-                    val savedToken = authRepository.tokenFlow.first()
-                    val savedNama = authRepository.namaFlow.first()
+                    val savedToken = authRepository.tokenFlow.firstOrNull()
+                    val savedNama = authRepository.namaFlow.firstOrNull()
                     if (savedToken != null && savedNama != null) {
                         token = savedToken
                         currentUserNama = savedNama
@@ -73,8 +74,8 @@ class MainActivity : ComponentActivity() {
                             // Ensure socket is connected if arrived from login
                             LaunchedEffect(Unit) {
                                 if (socketClient == null) {
-                                    val t = authRepository.tokenFlow.first()
-                                    val n = authRepository.namaFlow.first()
+                                    val t = authRepository.tokenFlow.firstOrNull()
+                                    val n = authRepository.namaFlow.firstOrNull()
                                     if (t != null && n != null) {
                                         token = t
                                         currentUserNama = n
@@ -89,7 +90,7 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToChat = { navController.navigate("chat") },
                                 onNavigateToProfile = { navController.navigate("profile") },
                                 onLogout = {
-                                    socketClient = null
+                                    socketClient = null; kotlinx.coroutines.MainScope().launch { authRepository.clearAuthData() }
                                     navController.navigate("login") {
                                         popUpTo("home") { inclusive = true }
                                     }

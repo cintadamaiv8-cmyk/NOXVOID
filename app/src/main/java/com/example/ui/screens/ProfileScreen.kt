@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AuthRepository
 import com.example.ui.theme.*
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,9 +35,9 @@ fun ProfileScreen(
     val coroutineScope = rememberCoroutineScope()
     
     LaunchedEffect(Unit) {
-        nama = authRepository.namaFlow.first() ?: ""
-        role = authRepository.roleFlow.first() ?: ""
-        tag = authRepository.tagFlow.first() ?: ""
+        nama = authRepository.namaFlow.firstOrNull() ?: ""
+        role = authRepository.roleFlow.firstOrNull() ?: ""
+        tag = authRepository.tagFlow.firstOrNull() ?: ""
     }
     
     Scaffold(
@@ -110,7 +110,7 @@ fun ProfileScreen(
                                         nama = newNama
                                         coroutineScope.launch {
                                             // Save to datastore locally for now
-                                            val token = authRepository.tokenFlow.first() ?: ""
+                                            val token = authRepository.tokenFlow.firstOrNull() ?: ""
                                             authRepository.saveAuthData(token, nama, role, tag)
                                         }
                                         isEditing = false

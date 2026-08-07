@@ -127,7 +127,7 @@ fun LoginScreen(
                                 try {
                                     val response = RetrofitClient.instance.login(LoginRequest(nama, password))
                                     if (response.success && response.token != null && response.user != null) {
-                                        authRepository.saveAuthData(response.token, response.user.nama, response.user.role, response.user.tag)
+                                        authRepository.saveAuthData(response.token, response.user.nama, response.user.role, response.user.tag ?: "")
                                         successMessage = "Login berhasil"
                                         kotlinx.coroutines.delay(1000)
                                         onLoginSuccess()
