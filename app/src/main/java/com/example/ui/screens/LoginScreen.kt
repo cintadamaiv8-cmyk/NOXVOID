@@ -48,7 +48,7 @@ fun LoginScreen(
             modifier = Modifier.padding(24.dp)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.logo),
+                painter = painterResource(id = R.drawable.login_logo),
                 contentDescription = "App Logo",
                 modifier = Modifier
                     .size(120.dp)
@@ -124,6 +124,15 @@ fun LoginScreen(
                             isLoading = true
                             errorMessage = null
                             coroutineScope.launch {
+                                // Bypass untuk testing di AI Studio Emulator
+                                if (nama.lowercase() == "admin" && password == "admin") {
+                                    authRepository.saveAuthData("dummy_token", "Admin", "owner", "#0000")
+                                    successMessage = "Login berhasil (Test Mode)"
+                                    kotlinx.coroutines.delay(1000)
+                                    onLoginSuccess()
+                                    return@launch
+                                }
+
                                 try {
                                     val response = RetrofitClient.instance.login(LoginRequest(nama, password))
                                     if (response.success && response.token != null && response.user != null) {

@@ -11,10 +11,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.data.AuthRepository
+import com.example.data.GroupRepository
 import com.example.network.SocketClient
 import com.example.ui.screens.ChatScreen
 import com.example.ui.screens.HomeScreen
@@ -31,11 +36,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+        
         authRepository = AuthRepository(applicationContext)
+        val groupRepository = GroupRepository(applicationContext)
 
         setContent {
             NoxVoidTheme {
                 val navController = rememberNavController()
+                val monitoringViewModel: MonitoringViewModel = viewModel()
                 var startDestination by remember { mutableStateOf<String?>(null) }
                 var token by remember { mutableStateOf<String?>(null) }
                 var currentUserNama by remember { mutableStateOf<String>("") }
@@ -49,6 +60,14 @@ class MainActivity : ComponentActivity() {
                         socketClient = SocketClient(savedToken)
                         socketClient?.connect()
                         startDestination = "home"
+                        
+                        kotlinx.coroutines.GlobalScope.launch {
+                            socketClient?.groupInfo?.collect { info ->
+                                if (info.name.isNotEmpty()) {
+                                    groupRepository.saveGroupData(info.name, info.description, info.banner, info.avatar)
+                                }
+                            }
+                        }
                     } else {
                         startDestination = "login"
                     }
@@ -61,6 +80,8 @@ class MainActivity : ComponentActivity() {
                 } else {
                     NavHost(navController = navController, startDestination = startDestination!!) {
                         composable("login") {
+                            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
                             LoginScreen(
                                 authRepository = authRepository,
                                 onLoginSuccess = {
@@ -71,6 +92,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("home") {
+                            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+                            
                             // Ensure socket is connected if arrived from login
                             LaunchedEffect(Unit) {
                                 if (socketClient == null) {
@@ -81,12 +105,21 @@ class MainActivity : ComponentActivity() {
                                         currentUserNama = n
                                         socketClient = SocketClient(t)
                                         socketClient?.connect()
+                                        
+                                        kotlinx.coroutines.GlobalScope.launch {
+                                            socketClient?.groupInfo?.collect { info ->
+                                                if (info.name.isNotEmpty()) {
+                                                    groupRepository.saveGroupData(info.name, info.description, info.banner, info.avatar)
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                             HomeScreen(
                                 authRepository = authRepository,
                                 socketClient = socketClient ?: SocketClient(""),
+                                monitoringViewModel = monitoringViewModel,
                                 onNavigateToChat = { navController.navigate("chat") },
                                 onNavigateToProfile = { navController.navigate("profile") },
                                 onLogout = {
@@ -98,13 +131,27 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("chat") {
+                            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
                             ChatScreen(
                                 socketClient = socketClient ?: SocketClient(""),
                                 currentUserNama = currentUserNama,
+                                onBack = { navController.popBackStack() },
+                                onNavigateToGroupProfile = { navController.navigate("group_profile") }
+                            )
+                        }
+                        composable("group_profile") {
+                            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+                            com.example.ui.screens.GroupProfileScreen(
+                                socketClient = socketClient ?: SocketClient(""),
+                                authRepository = authRepository,
                                 onBack = { navController.popBackStack() }
                             )
                         }
                         composable("profile") {
+                            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
                             ProfileScreen(
                                 authRepository = authRepository,
                                 onBack = { navController.popBackStack() }

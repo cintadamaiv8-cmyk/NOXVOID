@@ -18,6 +18,29 @@ const PORT = 3000;
 
 const messagesFile = './messages.json';
 
+const groupFile = './group.json';
+function getGroupInfo() {
+    try {
+        if (!fs.existsSync(groupFile)) {
+            const initial = {
+                name: "Clash Of Clans Community",
+                description: "Selamat datang di Clash Of Clans Community.\n\nTempat berdiskusi strategi, war, dan rekrutmen klan secara private dan eksklusif. Patuhi aturan dan jaga kesopanan sesama anggota NOXVOID.",
+                banner: "",
+                avatar: ""
+            };
+            fs.writeFileSync(groupFile, JSON.stringify(initial, null, 2));
+            return initial;
+        }
+        return JSON.parse(fs.readFileSync(groupFile));
+    } catch (e) {
+        return { description: "", banner: "", avatar: "" };
+    }
+}
+function saveGroupInfo(info) {
+    fs.writeFileSync(groupFile, JSON.stringify(info, null, 2));
+}
+
+
 function getMessages() {
     try {
         if (!fs.existsSync(messagesFile)) {
@@ -76,7 +99,7 @@ app.post('/login', (req, res) => {
     }
 });
 
-let onlineUsers = new Set();
+let onlineUsers = new Map();
 
 function broadcast(data) {
     const message = JSON.stringify(data);
@@ -88,7 +111,9 @@ function broadcast(data) {
 }
 
 function broadcastOnlineCount() {
-    broadcast({ type: 'online_users', count: onlineUsers.size });
+    broadcast({ type: 'online_users', count: onlineUsers.size, users: Array.from(onlineUsers.values()) });
+}
+    
 }
 
 wss.on('connection', (ws, req) => {
@@ -108,7 +133,7 @@ wss.on('connection', (ws, req) => {
                     }
                     ws.user = decoded;
                     isAuthenticated = true;
-                    onlineUsers.add(ws.user.nama);
+                    onlineUsers.set(ws.user.nama, { nama: ws.user.nama, role: ws.user.role, tag: ws.user.tag });
                     console.log(`User connected: ${ws.user.nama}`);
                     
                     broadcastOnlineCount();
@@ -116,7 +141,46 @@ wss.on('connection', (ws, req) => {
                     // Send history
                     const rows = getMessages();
                     ws.send(JSON.stringify({ type: 'history', messages: rows }));
+                    ws.send(JSON.stringify({ type: 'group_info', ...getGroupInfo() }));
                 });
+            
+            } else if (data.type === 'update_group' && isAuthenticated) {
+                const { field, value } = data;
+                const role = ws.user.role.toLowerCase();
+                
+                if (role === 'member') {
+                    ws.send(JSON.stringify({ type: 'toast', message: 'Anda bukan admin/owner' }));
+                    return;
+                }
+                if (field === 'banner' && role === 'admin') {
+                    ws.send(JSON.stringify({ type: 'toast', message: 'Anda bukan admin/owner' }));
+                    return;
+                }
+                
+                // Allowed
+                const groupInfo = getGroupInfo();
+                
+                // Role Validation
+                if (field === 'name' || field === 'banner') {
+                    if (role !== 'owner') {
+                        ws.send(JSON.stringify({ type: 'toast', message: 'Anda bukan admin/owner' }));
+                        return;
+                    }
+                } else if (field === 'description' || field === 'avatar') {
+                    if (role !== 'owner' && role !== 'admin') {
+                        ws.send(JSON.stringify({ type: 'toast', message: 'Anda bukan admin/owner' }));
+                        return;
+                    }
+                }
+                
+                if (field === 'description') groupInfo.description = value;
+                if (field === 'banner') groupInfo.banner = value;
+                if (field === 'avatar') groupInfo.avatar = value;
+                if (field === 'name') groupInfo.name = value;
+                saveGroupInfo(groupInfo);
+                
+                ws.send(JSON.stringify({ type: 'toast', message: 'Berhasil diubah' }));
+                broadcast({ type: 'group_info', ...groupInfo });
             } else if (data.type === 'send_message' && isAuthenticated) {
                 let msg = {
                     nama: ws.user.nama,
