@@ -114,7 +114,6 @@ function broadcastOnlineCount() {
     broadcast({ type: 'online_users', count: onlineUsers.size, users: Array.from(onlineUsers.values()) });
 }
     
-}
 
 wss.on('connection', (ws, req) => {
     // Authenticate via token in query string or header
