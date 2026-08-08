@@ -124,15 +124,6 @@ fun LoginScreen(
                             isLoading = true
                             errorMessage = null
                             coroutineScope.launch {
-                                // Bypass untuk testing di AI Studio Emulator
-                                if (nama.lowercase() == "admin" && password == "admin") {
-                                    authRepository.saveAuthData("dummy_token", "Admin", "owner", "#0000")
-                                    successMessage = "Login berhasil (Test Mode)"
-                                    kotlinx.coroutines.delay(1000)
-                                    onLoginSuccess()
-                                    return@launch
-                                }
-
                                 try {
                                     val response = RetrofitClient.instance.login(LoginRequest(nama, password))
                                     if (response.success && response.token != null && response.user != null) {
